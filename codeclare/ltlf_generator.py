@@ -53,8 +53,8 @@ class LTLfGenerator:
         if name == "succession":
             a, b = acts
             return f"G({a} -> F({b})) && (!{b}) U {a}"
-        
-        if name == "existence":   # ✅ new custom template
+
+        if name == "existence":
             if len(acts) != 1:
                 raise ValueError("Existence template requires exactly one activity.")
             a = acts[0]
@@ -62,10 +62,20 @@ class LTLfGenerator:
 
         raise KeyError(name)
 
-    # ------------------------------------------------------------------
-    # Standard Declare4Py templates
-    # ------------------------------------------------------------------
     def _declare4py(self, template_name: str, acts: List[str]) -> str:
+
+        if template_name == "response":
+            a = acts[0]
+            b = acts[1]
+
+            
+            if isinstance(b, str) and b.startswith("[") and b.endswith("]"):
+                items = [x.strip() for x in b[1:-1].split(",")]
+                b_disj = " || ".join(items)  
+                return f"G(({a}) -> F({b_disj}))"
+    
+
+        # Normal Declare4Py handling
         t = LTLTemplate(template_name)
 
         if len(acts) == 0:
@@ -75,7 +85,9 @@ class LTLfGenerator:
         elif len(acts) == 2:
             model = t.fill_template([acts[0]], [acts[1]])
         else:
-            raise ValueError(f"Template '{template_name}' expects at most 2 activities, got {len(acts)}")
+            raise ValueError(
+                f"Template '{template_name}' expects at most 2 activities, got {len(acts)}"
+            )
 
         return _clean(model.formula)
 
